@@ -45,6 +45,7 @@ namespace VRCPictureToClipboard
                 catch { } // ignore all excpetions
             });
 
+            t.IsBackground = true;
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
             t.Join();

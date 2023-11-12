@@ -40,6 +40,8 @@ namespace VRCPictureToClipboard
             ovr = new OVRIntegration();
             ovr.TryInit();
 
+            ovr.CloseRequested += CloseRequestedHandler;
+
             setupTrayMenu();
         }
 
@@ -56,33 +58,48 @@ namespace VRCPictureToClipboard
                 {
                     trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Register with SteamVR", null, RegisterSteamVR));
                 }
-                trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
+            } else
+            {
+                trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Start/Attach to SteamVR", null, AttachSteamVR));
             }
+
+            trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
 
             trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Pause", null, Pause));
             trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Exit", null, Exit));
         }
 
-        void RegisterSteamVR(object? sender, EventArgs e)
+        private void CloseRequestedHandler(object? sender, EventArgs args)
+        {
+            Exit(null, new EventArgs());
+        }
+
+        private void AttachSteamVR(object? sender, EventArgs e)
+        {
+            ovr.TryInit(true);
+            setupTrayMenu();
+        }
+
+        private void RegisterSteamVR(object? sender, EventArgs e)
         {
             ovr.InstallManifest();
             setupTrayMenu();
         }
 
-        void UnregisterSteamVR(object? sender, EventArgs e)
+        private void UnregisterSteamVR(object? sender, EventArgs e)
         {
             ovr.UninstallManifest();
             setupTrayMenu();
         }
 
-        void Pause(object? sender, EventArgs e)
+        private void Pause(object? sender, EventArgs e)
         {
             watcher.SetPaused(!watcher.Paused);
 
             ((ToolStripMenuItem)sender!).Checked = watcher.Paused;
         }
 
-        void Exit(object? sender, EventArgs e)
+        private void Exit(object? sender, EventArgs e)
         {
             trayIcon.Visible = false;
             Application.Exit();

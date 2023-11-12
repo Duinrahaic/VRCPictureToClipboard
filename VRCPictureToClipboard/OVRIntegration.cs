@@ -7,6 +7,8 @@ using System.Windows.Forms;
 using Valve.VR;
 using System.IO;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace VRCPictureToClipboard
 {
@@ -15,14 +17,19 @@ namespace VRCPictureToClipboard
         public static string APPLICATION_KEY = "com.jangxx.vrc-picture-clipboard";
 
         private CVRSystem? cVR;
-        private bool initialized = false;
 
+        private bool initialized = false;
         public bool Initialized
         {
             get { return initialized; }
         }
 
-        public bool TryInit()
+        public event EventHandler? CloseRequested;
+
+        private CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
+        private Thread? pollingThread = null;
+
+        public bool TryInit(bool startSteamVR = false)
         {
             if (cVR != null)
             {
@@ -30,8 +37,21 @@ namespace VRCPictureToClipboard
                 return false;
             }
 
+            if (pollingThread != null)
+            {
+                CancelTokenSource.Cancel();
+                pollingThread.Join();
+                pollingThread = null;
+            }
+
             EVRInitError error = EVRInitError.None;
-            cVR = OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+            if (startSteamVR)
+            {
+                cVR = OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+            } else
+            {
+                cVR = OpenVR.Init(ref error, EVRApplicationType.VRApplication_Background);
+            }
 
             if (error != EVRInitError.None)
             {
@@ -41,7 +61,38 @@ namespace VRCPictureToClipboard
             else
             {
                 this.initialized = true;
+
+                CancelTokenSource = new CancellationTokenSource();
+                pollingThread = new Thread(() => PollEvents());
+                pollingThread.IsBackground = true;
+                pollingThread.Name = "OpenVR Polling";
+                pollingThread.Start();
+
                 return true;
+            }
+        }
+
+        private void PollEvents()
+        {
+            VREvent_t evt = new VREvent_t();
+            uint eventSize = (uint)Marshal.SizeOf(evt);
+
+            while (true)
+            {
+                if (OpenVR.System.PollNextEvent(ref evt, eventSize))
+                {
+                    if (evt.eventType == (uint)EVREventType.VREvent_Quit)
+                    {
+                        var handler = CloseRequested;
+                        handler?.Invoke(this, new EventArgs());
+                    }
+                }
+
+                // we do this instead of thread.sleep
+                if (CancelTokenSource.Token.WaitHandle.WaitOne(100))
+                {
+                    return; // cancellation was requested
+                }
             }
         }
 
@@ -73,8 +124,6 @@ namespace VRCPictureToClipboard
 
             var executablePath = Application.ExecutablePath;
             var executableDir = Path.GetDirectoryName(executablePath);
-
-            MessageBox.Show(executablePath);
 
             EVRApplicationError error = OpenVR.Applications.AddApplicationManifest(Path.Join(executableDir, "manifest.vrmanifest"), false);
 
