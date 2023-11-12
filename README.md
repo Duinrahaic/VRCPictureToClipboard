@@ -34,4 +34,4 @@ Now whenever you launch SteamVR, VRCPictureToClipboard will automatically launch
 
 ## Contributions 
 
-[jangxx](https://github.com/jangxx): For enhancing the program work as a tray application, adding SteamVR integration, and for the logo.
+[jangxx](https://github.com/jangxx): For enhancing the program to work as a tray application, adding SteamVR integration, and for the logo.
