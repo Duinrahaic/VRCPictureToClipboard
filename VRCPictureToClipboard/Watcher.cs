@@ -1,55 +1,69 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace VRCPictureToClipboard
 {
-    public class Watcher : IHostedService, IDisposable
+    public class Watcher
     {
-        private ILogger<Watcher> _logger;
         private string Path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "VRChat");
         private FileSystemWatcher watcher;
+        private bool paused = false;
 
-        public Watcher(ILogger<Watcher> logger) 
+        public Watcher() 
         {
-            _logger = logger;
-            _logger.LogInformation("VRCPictureToClipboard Started");
-            _logger.LogInformation($"Watching {Path}");
             watcher = new FileSystemWatcher();
             watcher.Path = Path;
             watcher.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite
                                    | NotifyFilters.FileName | NotifyFilters.DirectoryName;
             watcher.Filter = "*.png";
-            watcher.Changed += Watcher_Changed;
+            watcher.Changed += (s, e) => this.Watcher_Changed(e);
             watcher.EnableRaisingEvents = true;
             watcher.IncludeSubdirectories = true;
         }
-        private static void Watcher_Changed(object sender, FileSystemEventArgs e)
+
+        private void Watcher_Changed(FileSystemEventArgs e)
         {
-            Console.WriteLine($"New image taken: {e.Name}");
-            Thread t = new Thread((ThreadStart)(() => {
-                Clipboard.SetImage(Image.FromFile(e.FullPath));
-            }));
+            Debug.Print($"New image taken: {e.Name}");
+
+            if (this.Paused) return;
+
+            Thread t = new Thread(() =>
+            {
+                try
+                {
+                    Clipboard.SetImage(Image.FromFile(e.FullPath));
+                }
+                catch { } // ignore all excpetions
+            });
+
+            t.IsBackground = true;
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
             t.Join();
         }
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
+
         public void Dispose()
         {
             watcher.Dispose();
         }
 
+        public void SetPaused(bool paused)
+        {
+            this.paused = paused;
+        }
+
+        public bool Paused
+        {
+            get { return paused; }
+        }
     }
 }
