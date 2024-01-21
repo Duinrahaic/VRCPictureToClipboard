@@ -66,6 +66,7 @@ namespace VRCPictureToClipboard
             trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
 
             trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Pause", null, Pause));
+            trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("QRMode", null, QRModeToggle));
             trayIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem("Exit", null, Exit));
         }
 
@@ -97,6 +98,13 @@ namespace VRCPictureToClipboard
             watcher.SetPaused(!watcher.Paused);
 
             ((ToolStripMenuItem)sender!).Checked = watcher.Paused;
+        }
+        
+        private void QRModeToggle(object? sender, EventArgs e)
+        {
+            watcher.SetQRMode(!watcher.QRModeEnabled);
+
+            ((ToolStripMenuItem)sender!).Checked = watcher.QRModeEnabled;
         }
 
         private void Exit(object? sender, EventArgs e)
