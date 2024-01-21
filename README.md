@@ -19,6 +19,7 @@ Clicking on the tray icon gives opens a menu with a few different options:
 - `Register with SteamVR`: "Installs" the software in SteamVR. This will put it into the list of possible startup overlay apps, so you can have SteamVR launch it automatically.
 - `Unregister from SteamVR`: "Uninstalls" the software from SteamVR, so it can no longer be automatically started.
 - `Pause`: Will pause/unpause the clipboard copying without closing the app.
+- `QRMode`: Will enable/disable QR-Mode which will scan pictures for QR-Codes and put the link into your clipboard.
 - `Exit`
 
 
